@@ -7,9 +7,7 @@ import java.util.Date;
  */
 public class TransaccionInventario {
     private String farmaciaId;
-    private String nombreProducto;
-    private String codigoProducto;
-    private int cantidad;
+    private Producto producto;
     private String tipoMovimiento; // "ENTRADA", "SALIDA", "AJUSTE"
     private long tiempoCreacion; 
     private String hashTransaccion;
@@ -19,11 +17,9 @@ public class TransaccionInventario {
     public static final String SALIDA = "SALIDA";
     public static final String AJUSTE = "AJUSTE";
 
-    public TransaccionInventario(String farmaciaId, String nombreProducto, String codigoProducto, int cantidad, String tipoMovimiento) {
+    public TransaccionInventario(String farmaciaId, Producto producto, String tipoMovimiento) {
         this.farmaciaId = farmaciaId;
-        this.nombreProducto = nombreProducto;
-        this.codigoProducto = codigoProducto;
-        this.cantidad = cantidad;
+        this.producto = producto;
         this.tipoMovimiento = tipoMovimiento;
         this.tiempoCreacion = new Date().getTime();
         this.hashTransaccion = calcularHash();
@@ -31,15 +27,13 @@ public class TransaccionInventario {
 
     // Calcula el hash de la transaccion
     public String calcularHash() {
-        String datosTransaccion = farmaciaId + nombreProducto + codigoProducto + Integer.toString(cantidad) + tipoMovimiento + Long.toString(tiempoCreacion);
+        String datosTransaccion = farmaciaId + producto.getNombre() + producto.getCodigo() + Integer.toString(producto.getCantidad()) + tipoMovimiento + Long.toString(tiempoCreacion);
         return CriptoUtil.aplicarSha256(datosTransaccion);
     }
 
     // Getters
     public String getFarmaciaId() { return farmaciaId; }
-    public String getNombreProducto() { return nombreProducto; }
-    public String getCodigoProducto() { return codigoProducto; }
-    public int getCantidad() { return cantidad; }
+    public Producto getProducto() { return producto; }
     public String getTipoMovimiento() { return tipoMovimiento; }
     public long getTiempoCreacion() { return tiempoCreacion; }
     public String getHashTransaccion() { return hashTransaccion; }
@@ -54,6 +48,6 @@ public class TransaccionInventario {
         } else {
             estado = "Ajuste: ";
         }
-        return "ID: " + hashTransaccion.substring(0, 8) + "... | " + estado + cantidad + " de " + nombreProducto + " (" + codigoProducto + ")";
+        return "ID: " + hashTransaccion.substring(0, 8) + "... | " + estado + producto.getCantidad() + " de " + producto.getNombre() + " (" + producto.getCodigo() + ")";
     }
 }

@@ -1,12 +1,18 @@
-
 package vista;
+
 import modelo.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 /**
  *
  * @author Erick
@@ -14,7 +20,7 @@ import java.util.HashMap;
 public class FarmaciaApp extends JFrame {
     private Blockchain blockchain;
     private Bloque bloquePendiente;
-    private ArrayList<String> listaFarmacias; // Lista de IDs de farmacias
+    private ArrayList<String> listaFarmacias; //  IDs de farmacias
 
     private JComboBox<String> comboFarmacias;
     private DefaultListModel<Bloque> listModelBloques;
@@ -31,7 +37,7 @@ public class FarmaciaApp extends JFrame {
         bloquePendiente = new Bloque(blockchain.obtenerUltimoBloque().getHash());
         listaFarmacias = new ArrayList<>();
         
-        // Inicializar algunas farmacias de ejemplo
+      
         listaFarmacias.add("Farmacia A");
         listaFarmacias.add("Farmacia B");
 
@@ -40,7 +46,7 @@ public class FarmaciaApp extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Paneles principales
+        // Paneles 
         JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
         JPanel panelIzquierdo = new JPanel(new BorderLayout());
         JPanel panelDerecho = new JPanel(new BorderLayout());
@@ -107,11 +113,15 @@ public class FarmaciaApp extends JFrame {
             return;
         }
         
+        // Cargar datos de la tabla (simulado con JOptionPanes)
         String nombreProducto = JOptionPane.showInputDialog("Nombre del producto:");
         String codigoProducto = JOptionPane.showInputDialog("Código del producto:");
         int cantidad = Integer.parseInt(JOptionPane.showInputDialog("Cantidad a " + (tipo.equals(TransaccionInventario.ENTRADA) ? "ingresar" : "retirar") + ":"));
 
-        TransaccionInventario transaccion = new TransaccionInventario(farmaciaSeleccionada, nombreProducto, codigoProducto, cantidad, tipo);
+        // Ejemplo con la clase hija Medicamento
+        Producto nuevoProducto = new Medicamento(nombreProducto, codigoProducto, cantidad, "250mg");
+
+        TransaccionInventario transaccion = new TransaccionInventario(farmaciaSeleccionada, nuevoProducto, tipo);
         bloquePendiente.agregarTransaccion(transaccion);
         listModelTransaccionesPendientes.addElement(transaccion);
         labelEstado.setText("Estado: Transacción agregada. A la espera de ser minada.");
@@ -128,6 +138,9 @@ public class FarmaciaApp extends JFrame {
         blockchain.agregarBloque(bloquePendiente);
         listModelBloques.addElement(bloquePendiente);
 
+        // Llamar al método para guardar el bloque como JSON
+        guardarBloqueComoJSON(bloquePendiente, blockchain.getCadena().size() - 1);
+        
         listModelTransaccionesPendientes.clear();
         bloquePendiente = new Bloque(blockchain.obtenerUltimoBloque().getHash());
         
@@ -157,19 +170,24 @@ public class FarmaciaApp extends JFrame {
         for (Bloque bloque : blockchain.getCadena()) {
             for (TransaccionInventario transaccion : bloque.getTransacciones()) {
                 if (transaccion.getFarmaciaId().equals(farmaciaSeleccionada)) {
-                    String codigo = transaccion.getCodigoProducto();
+                    String codigo = transaccion.getProducto().getCodigo();
                     
                     if (!inventarioCalculado.containsKey(codigo)) {
-                        inventarioCalculado.put(codigo, new Producto(transaccion.getNombreProducto(), codigo, 0));
+                        inventarioCalculado.put(codigo, new Producto(transaccion.getProducto().getNombre(), codigo, 0) {
+                            @Override
+                            public String getTipo() {
+                                return "Desconocido"; // Solo para el ejemplo
+                            }
+                        });
                     }
                     
                     Producto producto = inventarioCalculado.get(codigo);
                     int nuevaCantidad = producto.getCantidad();
                     
                     if (transaccion.getTipoMovimiento().equals(TransaccionInventario.ENTRADA)) {
-                        nuevaCantidad += transaccion.getCantidad();
+                        nuevaCantidad += transaccion.getProducto().getCantidad();
                     } else if (transaccion.getTipoMovimiento().equals(TransaccionInventario.SALIDA)) {
-                        nuevaCantidad -= transaccion.getCantidad();
+                        nuevaCantidad -= transaccion.getProducto().getCantidad();
                     }
                     producto.setCantidad(nuevaCantidad);
                 }
@@ -180,6 +198,34 @@ public class FarmaciaApp extends JFrame {
             listModelInventario.addElement(p);
         }
     }
+    
+    private void guardarBloqueComoJSON(Bloque bloque, int index) {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Guardar Bloque como JSON");
+    int userSelection = fileChooser.showSaveDialog(this);
+
+    if (userSelection == JFileChooser.APPROVE_OPTION) {
+        String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+        if (!filePath.endsWith(".json")) {
+            filePath += ".json";
+        }
+
+        // Se usa OutputStreamWriter para asegurar la codificación UTF-8
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(filePath), "UTF-8"))) {
+
+            // Agregar index y luego el JSON del bloque
+            String jsonString = bloque.toString();
+            jsonString = jsonString.replaceFirst("\\{", "{\"index\": " + index + ",");
+
+            writer.write(jsonString);
+            JOptionPane.showMessageDialog(this, "Bloque guardado con éxito en: " + filePath);
+
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + ex.getMessage());
+        }
+    }
+}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new FarmaciaApp().setVisible(true));
