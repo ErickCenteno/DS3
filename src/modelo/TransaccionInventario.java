@@ -1,33 +1,41 @@
-
 package modelo;
+import java.io.Serializable;
 import java.util.Date;
 /**
  *
  * @author Erick
  */
-public class TransaccionInventario {
-    private String farmaciaId;
-    private Producto producto;
-    private String tipoMovimiento; // "ENTRADA", "SALIDA", "AJUSTE"
-    private long tiempoCreacion; 
-    private String hashTransaccion;
-
-    // Constantes para los tipos de movimiento
+public class TransaccionInventario implements Serializable {
     public static final String ENTRADA = "ENTRADA";
     public static final String SALIDA = "SALIDA";
     public static final String AJUSTE = "AJUSTE";
 
-    public TransaccionInventario(String farmaciaId, Producto producto, String tipoMovimiento) {
+    private String farmaciaId;
+    private Producto producto;
+    private String tipoMovimiento;
+    private long tiempoCreacion;
+    private String hashTransaccion;
+
+    // campos para la información adicional
+    private String responsable;
+    private String lote;
+    private String fechaCaducidad;
+
+    public TransaccionInventario(String farmaciaId, Producto producto, String tipoMovimiento, String responsable, String lote, String fechaCaducidad) {
         this.farmaciaId = farmaciaId;
         this.producto = producto;
         this.tipoMovimiento = tipoMovimiento;
+        this.responsable = responsable;
+        this.lote = lote;
+        this.fechaCaducidad = fechaCaducidad;
         this.tiempoCreacion = new Date().getTime();
         this.hashTransaccion = calcularHash();
     }
 
     // Calcula el hash de la transaccion
     public String calcularHash() {
-        String datosTransaccion = farmaciaId + producto.getNombre() + producto.getCodigo() + Integer.toString(producto.getCantidad()) + tipoMovimiento + Long.toString(tiempoCreacion);
+        // campos en la cadena para el hash
+        String datosTransaccion = farmaciaId + producto.getNombre() + producto.getCodigo() + Integer.toString(producto.getCantidad()) + tipoMovimiento + responsable + lote + fechaCaducidad + Long.toString(tiempoCreacion);
         return CriptoUtil.aplicarSha256(datosTransaccion);
     }
 
@@ -37,6 +45,11 @@ public class TransaccionInventario {
     public String getTipoMovimiento() { return tipoMovimiento; }
     public long getTiempoCreacion() { return tiempoCreacion; }
     public String getHashTransaccion() { return hashTransaccion; }
+    
+    //  nuevos campos
+    public String getResponsable() { return responsable; }
+    public String getLote() { return lote; }
+    public String getFechaCaducidad() { return fechaCaducidad; }
 
     @Override
     public String toString() {
