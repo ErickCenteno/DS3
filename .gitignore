@@ -1,0 +1,5 @@
+*.class
+*.pem
+/build/
+/nbproject/private/
+
